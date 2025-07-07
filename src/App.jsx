@@ -8,14 +8,36 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
+import TrackCards from "./TrackCards";
 import './App.css'
 
 function App() {
+  useEffect(() => {
+    (async () => {
+      await handleRedirect(); // handles the Spotify redirect
+      const t = localStorage.getItem("access_token");
+
+      if (t) {
+        console.log("access_token found →", t);
+        setToken(t);
+      } else {
+        console.warn("No access token found in localStorage");
+      }
+    })();
+  }, []);
+
+  // 1 = setup, 2 = picking, 3 = done
+  const [step, setStep] = useState(1);
+  const [trackIndex, setTrackIndex] = useState(0);
 
   const [artistID, setArtistID] = useState("");
   const [name, setName] = useState("");
 
   const [tracks, setTracks] = useState([]);
+  const [selectedTracks, setSelectedTracks] = useState([]);
+
+  const [playlistUrl, setPlaylistUrl] = useState(null);
+
   const [token, setToken] = useState(null);
 
   useEffect(() => {
@@ -45,6 +67,26 @@ function App() {
     return res.json();
   }
 
+  function handleChoose(track) {
+    setSelectedTracks(prev => [...prev, track]);
+
+    if (trackIndex + 2 >= 10) {
+      setStep(3); // Done picking!
+    } else {
+      setTrackIndex(prev => prev + 2); // Next pair
+    }
+  }
+
+  function handleChoose(track) {
+    setSelectedTracks(prev => [...prev, track]);
+
+    if (trackIndex + 2 >= 10) {
+      setStep(3); // done picking!
+    } else {
+      setTrackIndex(prev => prev + 2); // Next pair
+    }
+  }
+
   //getting top tracks of user, once we have a token
   useEffect(() => {
     if (!token || !artistID)
@@ -54,10 +96,11 @@ function App() {
         const data = await fetchWebApi(
           `v1/artists/${artistID}/top-tracks?market=US`, `GET`
         );
-        setTracks(data.tracks.slice(0, 10).map(t => ({
-          name: t.name,
-          uri: t.uri
-        })));
+        // setTracks(data.tracks.slice(0, 10).map(t => ({
+        //   name: t.name,
+        //   uri: t.uri
+        // })));
+        setTracks(data.tracks.slice(0, 10));
       } catch (err) {
         console.error(err);
       }
@@ -86,6 +129,8 @@ function App() {
       `v1/playlists/${playlist.id}/tracks?uris=${trackUris.join(",")}`,
       "POST"
     );
+    // setPlaylistUrl(playlist.external_urls.spotify); // this is the shareable link
+    // setStep(4);
   }
 
   return (
@@ -130,24 +175,55 @@ function App() {
         </FormControl>
       </Box>
 
-      <Button
-        variant="contained"
-        color="secondary"
-        sx={{ ml: 2 }}
-        disabled={tracks.length === 0}
-        onClick={() => createPlaylist(tracks.map((t) => t.uri))}
-      >
-        Create Playlist
-      </Button>
-      5:00
+      {step === 1 && (
+        <Button
+          variant="contained"
+          color="secondary"
+          sx={{ ml: 2 }}
+          disabled={tracks.length === 0}
+          onClick={() => setStep(2)}
+        >
+          Start Picking Songs
+        </Button>
+      )}
 
-      <ul>
+      {step === 2 && (
+        <>
+          <TrackCards
+            tracks={tracks.slice(trackIndex, trackIndex + 2)}
+            onChoose={handleChoose}
+          />
+        </>
+      )}
+
+      {step === 3 && (
+        <Button
+          variant="contained"
+          color="success"
+          sx={{ mt: 4 }}
+          onClick={() => createPlaylist(selectedTracks.map(t => t.uri))}
+        >
+          Create Playlist from Picks
+        </Button>
+      )}
+{/* 
+      {step === 4 && playlistUrl && (
+        <Box sx={{ mt: 4 }}>
+          <h2>Your Playlist is Ready!</h2>
+          <a href={playlistUrl} target="_blank" rel="noopener noreferrer">
+            Open in Spotify 🎵
+          </a>
+        </Box>
+      )} */}
+
+      {/* <ul>
         {tracks.map((t) => (
           <li key={t.id}>{t.name}</li>
         ))}
-      </ul>
-    </>
+      </ul> */}
 
+
+    </>
   )
 }
 

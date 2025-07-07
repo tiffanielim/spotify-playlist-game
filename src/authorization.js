@@ -66,6 +66,14 @@ export async function handleRedirect() {
   const redirectUri = 'https://tiffanielim.github.io/spotify-playlist-game/';
   const codeVerifier = localStorage.getItem('code_verifier');
 
+  console.log('URL code param →', code);
+  console.log('Saved code_verifier →', codeVerifier);
+
+  if (!codeVerifier) {
+    console.error("Missing code_verifier. Likely origin mismatch.");
+    return;
+  }
+
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
