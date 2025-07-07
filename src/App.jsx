@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from '@mui/material';
 import { authorize, handleRedirect } from './authorization';
 import TextField from "@mui/material/TextField";
-// import Typography from "@mui/material/Typography";
+import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -26,16 +26,19 @@ function App() {
     })();
   }, []);
 
-  // 1 = setup, 2 = picking, 3 = done
+  //step 0) general setup
   const [step, setStep] = useState(1);
   const [trackIndex, setTrackIndex] = useState(0);
 
+  //step 1) setup/select artist & name
   const [artistID, setArtistID] = useState("");
   const [name, setName] = useState("");
 
+  //step 2) user selects artist
   const [tracks, setTracks] = useState([]);
   const [selectedTracks, setSelectedTracks] = useState([]);
 
+  //step 3) create playlist!
   const [playlistUrl, setPlaylistUrl] = useState(null);
 
   const [token, setToken] = useState(null);
@@ -47,16 +50,6 @@ function App() {
   useEffect(() => {
     console.log('name →', name);
   }, [name]);
-
-  // get the token after redirect
-  useEffect(() => {
-    (async () => {
-      await handleRedirect();
-      const t = localStorage.getItem("access_token");
-      if (t)
-        setToken(t);
-    })();
-  }, []);
 
   async function fetchWebApi(endpoint, method, body = null) {
     const res = await fetch(`https://api.spotify.com/${endpoint}`, {
@@ -72,16 +65,6 @@ function App() {
 
     if (trackIndex + 2 >= 10) {
       setStep(3); // Done picking!
-    } else {
-      setTrackIndex(prev => prev + 2); // Next pair
-    }
-  }
-
-  function handleChoose(track) {
-    setSelectedTracks(prev => [...prev, track]);
-
-    if (trackIndex + 2 >= 10) {
-      setStep(3); // done picking!
     } else {
       setTrackIndex(prev => prev + 2); // Next pair
     }
@@ -129,100 +112,112 @@ function App() {
       `v1/playlists/${playlist.id}/tracks?uris=${trackUris.join(",")}`,
       "POST"
     );
-    // setPlaylistUrl(playlist.external_urls.spotify); // this is the shareable link
-    // setStep(4);
+    const link = `https://open.spotify.com/playlist/${playlist.id}`;
+    setPlaylistUrl(link);
+    setStep(4);
   }
 
   return (
     <>
-      {!token && (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={authorize}
-          sx={{ mt: 4 }}
-        >
-          Login with Spotify
-        </Button>
-      )}
+      <Container maxWidth="lg" gap="4">
+        {!token && (
+          <Box>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={authorize}
+              sx={{ mt: 4 }}
+            >
+              Login with Spotify
+            </Button>
+          </Box>
+        )}
 
-      <TextField
-        id="outlined-controlled"
-        label="enter your name:"
-        placeholder='Name'
-        value={name}
-        onChange={(event) => {
-          setName(event.target.value);
-        }}
-      />
+        {!name && (
+          <Box>
+            <TextField
+              fullWidth
+              id="outlined-controlled"
+              label="enter your name:"
+              placeholder='Name'
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+              }}
+            />
+          </Box>
+        )}
 
-      <p>Current name: {name}</p>
+        {!artistID && (
+          <Box sx={{ minWidth: 120 }}>
+            <FormControl fullWidth>
+              <InputLabel id="demo-simple-select-label">choose your artist:</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={artistID}
+                label="artist"
+                onChange={e =>
+                  setArtistID(e.target.value)}
+              >
+                <MenuItem value="06HL4z0CvFAxyc27GXpf02">Taylor Swift</MenuItem>
+                <MenuItem value="2YZyLoL8N0Wb9xBt1NhZWg">Kendrick Lamar</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        )}
 
-      <Box sx={{ minWidth: 120 }}>
-        <FormControl fullWidth>
-          <InputLabel id="demo-simple-select-label">choose your artist:</InputLabel>
-          <Select
-            labelId="demo-simple-select-label"
-            id="demo-simple-select"
-            value={artistID}
-            label="artist"
-            onChange={e =>
-              setArtistID(e.target.value)}
-          >
-            <MenuItem value="06HL4z0CvFAxyc27GXpf02">Taylor Swift</MenuItem>
-            <MenuItem value="2YZyLoL8N0Wb9xBt1NhZWg">Kendrick Lamar</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+        {step === 1 && (
+          <Box>
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ ml: 2 }}
+              disabled={tracks.length === 0}
+              onClick={() => setStep(2)}
+            >
+              Pick your songs!
+            </Button>
+          </Box>
+        )}
 
-      {step === 1 && (
-        <Button
-          variant="contained"
-          color="secondary"
-          sx={{ ml: 2 }}
-          disabled={tracks.length === 0}
-          onClick={() => setStep(2)}
-        >
-          Start Picking Songs
-        </Button>
-      )}
+        {step === 2 && (
+          <>
+            <TrackCards
+              tracks={tracks.slice(trackIndex, trackIndex + 2)}
+              onChoose={handleChoose}
+            />
+          </>
+        )}
 
-      {step === 2 && (
-        <>
-          <TrackCards
-            tracks={tracks.slice(trackIndex, trackIndex + 2)}
-            onChoose={handleChoose}
-          />
-        </>
-      )}
+        {step === 3 && (
+          <Box>
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ mt: 4 }}
+              onClick={() => createPlaylist(selectedTracks.map(t => t.uri))}
+            >
+              Create Playlist from Picks
+            </Button>
+          </Box>
+        )}
 
-      {step === 3 && (
-        <Button
-          variant="contained"
-          color="success"
-          sx={{ mt: 4 }}
-          onClick={() => createPlaylist(selectedTracks.map(t => t.uri))}
-        >
-          Create Playlist from Picks
-        </Button>
-      )}
-{/* 
-      {step === 4 && playlistUrl && (
-        <Box sx={{ mt: 4 }}>
-          <h2>Your Playlist is Ready!</h2>
-          <a href={playlistUrl} target="_blank" rel="noopener noreferrer">
-            Open in Spotify 🎵
-          </a>
-        </Box>
-      )} */}
+        {step === 4 && playlistUrl && (
+          <Box sx={{ mt: 4 }}>
+            <h2>Hi {name}, your playlist is ready.</h2>
+            <a href={playlistUrl} target="_blank" rel="noopener noreferrer">
+              Open in Spotify 🎵
+            </a>
+          </Box>
+        )}
 
-      {/* <ul>
+        {/* <ul>
         {tracks.map((t) => (
           <li key={t.id}>{t.name}</li>
         ))}
       </ul> */}
-
-
+      </Container>
     </>
   )
 }

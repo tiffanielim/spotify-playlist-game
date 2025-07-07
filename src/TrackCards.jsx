@@ -5,40 +5,77 @@
 // The clicked track object is passed back so we can add it to selectedTracks
 // (to eventually create a playlist from selectedTracks)
 
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardMedia from '@mui/material/CardMedia';
+import Typography from '@mui/material/Typography';
+import Grid from '@mui/material/Grid';
+
 import React from "react";
+
 export default function TrackCards({ tracks = [], onChoose }) {
     if (tracks.length !== 2)
         return null;
 
     return (
-        <div className="card-pair">
-            {tracks.map((track) => (
-                <div
-                    key={track.id}
-                    className="track-card"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onChoose(track)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") onChoose(track);
-                    }}
-                >
-                    {/* track cover */}
-                    <img
-                        className="cover"
-                        src={track.album.images?.[0]?.url}
-                        alt={`${track.name} cover art`}
-                    />
+        <Grid container spacing={0}>
+            <div className="card-pair">
 
-                    {/* song title t*/}
-                    <h3 className="title">{track.name}</h3>
-
-                    {/* artist */}
-                    <p className="artist">
-                        {track.artists.map((a) => a.name).join(", ")}
-                    </p>
-                </div>
-            ))}
-        </div>
+                {tracks.map((track) => (
+                    <Grid>
+                        <Card
+                            key={track.id}
+                            className="track-card"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                                onChoose(track)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ")
+                                    onChoose(track);
+                            }}
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                padding: 2,
+                                bgcolor: "#fff",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                borderRadius: 2,
+                                cursor: "pointer",
+                                transition: "transform 0.2s ease",
+                                "&:hover": {
+                                    transform: "scale(1.03)",
+                                },
+                            }}
+                        >
+                            {/* track cover */}
+                            <CardMedia
+                                component="img"
+                                height="100"
+                                image={track.album.images?.[0]?.url}
+                                alt={`${track.name} cover`}
+                                sx={{
+                                    width: "90%",
+                                    height: "auto",
+                                    borderRadius: 1,
+                                    mb: 2,
+                                }}
+                            />
+                            <CardContent sx={{ pt: 0, maxWidth: 150, height: 25 }}>
+                                {/* song title t*/}
+                                <Typography variant="songTitle" component="div" className="title">
+                                    {track.name}
+                                </Typography>
+                                {/* artist */}
+                                <Typography variant="artistName" className="artist">
+                                    {track.artists.map((a) => a.name).join(", ")}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </div>
+        </Grid>
     );
 }
