@@ -1,3 +1,5 @@
+//deals with authorization and PKCE code
+
 //// Adapted from Spotify Authorization Code with PKCE Flow Guide:
 //// https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow 
 
